@@ -1701,7 +1701,8 @@ function finishIntro(){
 }
 function coverFigures(){
   const base=D.allW.filter(w=>w._type==='waterway'),ways=base.length?base:D.allW,a=agg(ways,'avg');
-  return{pct:a.pct||0,acc:a.acc,n:ways.length,regions:new Set(ways.map(w=>w._r)).size};
+  const listed=D.regions.filter(r=>regionToken(r)!=='UNASSIGNED').length;
+  return{pct:a.pct||0,acc:a.acc,n:ways.length,regions:listed||new Set(ways.map(w=>w._r)).size};
 }
 function runCoverCount(){
   if(!INTRO.stats)return;
@@ -2104,18 +2105,26 @@ function visibleTree(){
       if(!w.length)return;
       const y={s,ws:w};sites.push(y);VT.set(s._k,y);ws=ws.concat(w);
     });
-    if(!sites.length)return;
-    const x={r,sites,ws};out.push(x);VT.set(r._k,x);
+    /* a region stays on the list even when it has no rows yet, or when every one of
+       its rows is hidden by the type filter (e.g. a region with drainages only) */
+    const empty=!r._ways.length,filtered=!empty&&!r._ways.some(typeOk);
+    if(!sites.length&&!((empty||filtered)&&(!q||rHit)))return;
+    const x={r,sites,ws,empty,filtered};out.push(x);VT.set(r._k,x);
   });
   return out;
 }
 function isOpen(k){return!!ST.q||ST.open.has(k);}
+/* "3 drainages · tap to show" for a region whose records are all hidden by the type filter */
+function hiddenNote(r){
+  const all=r._ways.filter(w=>!typeOk(w));
+  return typeCounts(all)+' · tap to show';
+}
 function volText(a){return(a.plan||a.acc)?' · '+fmtInt(a.acc)+' / '+fmtInt(a.plan)+' m³':'';}
 function regionHtml(x){
   const r=x.r,a=agg(x.ws),open=isOpen(r._k);
   return '<div class="node lvl-r'+(open?' open':'')+'" data-k="'+r._k+'"><div class="row" data-sel="'+r._k+'" tabindex="0">'+
     '<span class="chev" data-tog="1" role="button" aria-label="Show or hide sites">'+ICONS.chev+'</span>'+
-    '<div class="nm"><div class="t">'+esc(regionFull(r))+'</div><div class="m">'+x.sites.length+' site'+(x.sites.length===1?'':'s')+' · '+typeCounts(x.ws)+volText(a)+'</div></div>'+
+    '<div class="nm"><div class="t">'+esc(regionFull(r))+'</div><div class="m">'+(x.empty?'No waterways recorded yet':x.filtered?hiddenNote(r):x.sites.length+' site'+(x.sites.length===1?'':'s')+' · '+typeCounts(x.ws)+volText(a))+'</div></div>'+
     barHtml(a.pct)+pctHtml(a.pct)+'</div><div class="kids"><div class="kin">'+(open?x.sites.map(siteHtml).join(''):'')+'</div></div></div>';
 }
 function siteHtml(y){
@@ -2257,6 +2266,10 @@ $('qClear').addEventListener('click',()=>{$('q').value='';$('qClear').hidden=tru
 function setSel(r,s,w){ST.sel={r:r||null,s:s||null,w:w||null};ST.limit=0;refreshPanels({fly:true});SFX.select();}
 function selectRegion(r){
   if(ST.sel.r===r&&!ST.sel.s){const el=nodeEl(r._k);setOpen(el,!el.classList.contains('open'));return;}
+  /* every record of this region is hidden by the type filter: switch those types on so it opens with content */
+  if(r._ways.length&&!r._ways.some(typeOk)){
+    r._ways.forEach(w=>ST.types.add(w._type));paintTypeSeg();renderTree();
+  }
   setSel(r);openPath();
 }
 function selectSite(s){
