@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OKB Magazine + Accomplishment</title>
+<style>html,body{margin:0;height:100%;background:#f6f8fb;font-family:Inter,system-ui,sans-serif;color:#0B1F3A}.c{height:100%;display:grid;place-items:center;font-weight:600}</style>
+</head>
+<body>
+<div class="c">Opening the magazine…</div>
+<script>
+/* GitHub Pages has no server, so a shared path-style link such as
+     …/vipmagazine/region-vi/buntatala-creek
+   lands here. Turn the path into the form the page understands:
+     …/vipmagazine/?region=region-vi&waterway=buntatala-creek */
+(function(){
+  var base='/vipmagazine/';
+  var rest=location.pathname.indexOf(base)===0?location.pathname.slice(base.length):'';
+  var parts=rest.split('/').map(function(s){return s.trim();}).filter(Boolean);
+  var q=[];
+  if(parts.length===1)q.push('region='+encodeURIComponent(parts[0]));
+  else if(parts.length===2)q.push('region='+encodeURIComponent(parts[0]),'waterway='+encodeURIComponent(parts[1]));
+  else if(parts.length>=3)q.push('region='+encodeURIComponent(parts[0]),'site='+encodeURIComponent(parts[1]),'waterway='+encodeURIComponent(parts[2]));
+  location.replace(base+(q.length?'?'+q.join('&'):'')+location.hash);
+})();
+</script>
+</body>
+</html>
